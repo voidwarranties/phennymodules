@@ -8,7 +8,7 @@ import urllib2
 import json
 
 def status(phenny, input): 
-	u = urllib2.urlopen('http://voidwarranties.be/SpaceAPI/')
+	u = urllib2.urlopen('http://voidwarranties.org/SpaceAPI/')
 	jsonSpaceAPI = json.load(u)
 	u.close()
 	spacestatus = ""
