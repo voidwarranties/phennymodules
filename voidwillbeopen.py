@@ -50,7 +50,7 @@ def setup(bot):
 
 
 @willie.module.commands('go2vw')
-@willie.module.example('.go2vw @13.00, i have a key')
+@willie.module.example('.go2vw @13.00 i have a key')
 def go2vw(bot, trigger):
 	
 	hours = []
