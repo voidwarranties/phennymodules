@@ -56,6 +56,7 @@ def hour_range(start, stop, step):
 def updateDatabase(bot,userInfo,path,option):
 	if(option=="add"):
 		new_data_struct=[]
+
 		"""Read info from the .json file"""
 		with open(path,'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
 			try:
@@ -66,18 +67,20 @@ def updateDatabase(bot,userInfo,path,option):
 				new_data_struct.append(userInfo)
 			except ValueError:		#Build in ValueError , because if file empty => Problems !!! 
 				new_data_struct.append(userInfo)
-				
+
 		"""Write new info to the .json file"""
 		with open(path,'w') as f:
 			json.dump(json.dumps(new_data_struct), f)
 			bot.say("Your information has been stored.")
 			return
 
-	"""	Read info from .json file and search for entries 
-		with the username userInfo[0], delete those		"""
+	"""	
+	Read info from .json file and search for entries 
+	with the username userInfo[0], delete those		
+	"""
 	with open(path,'a+') as f:	#'r' not good enough, if file does not exists. Problems!
 		try:
-				j_data =json.load(f)
+			j_data =json.load(f)
 		except ValueError:
 			bot.say("Wast of time!!!")
 			return
@@ -86,6 +89,7 @@ def updateDatabase(bot,userInfo,path,option):
 		i=0
 	
 		while i < len(data_struct):
+			#print data_struct[i][0]
 			if data_struct[i][0] == userInfo[0]:
 				del data_struct[i]
 				print data_struct
@@ -116,8 +120,7 @@ def gvw(bot, trigger):
 	key_found = False
 	valid_input_hour = False
 	message = trigger.group(2)
-	#dummy 
-	#userInfo = [username,has_key,needsfood,arrival_hour]
+	#dummy userInfo = [username,has_key,needsfood,arrival_hour]
 	userInfo = [trigger.nick,False,False,None] 
 
 	#Fix bug if user types : .gvw with a space after it.
@@ -139,7 +142,6 @@ def gvw(bot, trigger):
 		updateDatabase(bot,userInfo,get_file_path(bot, trigger.sender),"add")
 
 	"""Check when the door will open"""
-	
 	key_holder_user = []
 	key_holder_arrival = []
 	hungry_users_need_food = []
@@ -149,8 +151,9 @@ def gvw(bot, trigger):
 	with open(get_file_path(bot,trigger.sender),'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
 		try:
 			j_data =json.load(f)
-			data_struct = json.loads(j_data,object_hook=_decode_list) #encoding not working atm????? Fix by line 154 and 155		
-
+			data_struct = json.loads(j_data,object_hook=_decode_list) 
+			#encoding not working !!!!!!!!!! Fix with line 157 and 158, not nice.		
+	
 			for i in range(len(data_struct)):
 				data_struct[i][0] = data_struct[i][0].encode('utf-8')
 				data_struct[i][3] = float(data_struct[i][3])
@@ -184,4 +187,3 @@ def gvw(bot, trigger):
 			bot.say("My database is empty!!!")
 			return
 
-	
