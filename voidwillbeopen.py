@@ -78,44 +78,54 @@ def updateDatabase(bot,userInfo,path,option):
 	Read info from .json file and search for entries 
 	with the username userInfo[0], delete those		
 	"""
-	with open(path,'a+') as f:	#'r' not good enough, if file does not exists. Problems!
+	if(option=="delete"):
+		with open(path,'a+') as f:	#'r' not good enough, if file does not exists. Problems!
+			try:
+				j_data =json.load(f)
+			except ValueError:
+				bot.say("The database was empty?!")
+				return
+			
+			data_struct = json.loads(j_data)
+			i=0
+		
+			while i < len(data_struct):
+				#print data_struct[i][0]
+				if data_struct[i][0] == userInfo[0]:
+					del data_struct[i]
+					print data_struct
+					i=0 #Should be optimalized !!!!!
+				if len(data_struct) != 1: #If jos was the only guy in the database, his entry would stay in the database. Not cool for jos.
+					i = i + 1
+		
+		with open(path,'w') as f:
+			json.dump(json.dumps(data_struct), f)
+			bot.say("Your information has been deleted.")
+			return
+
+def findUserInDatabaseAndDelete(bot,userInfo,path):
+	with open(path,'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
 		try:
 			j_data =json.load(f)
-		except ValueError:
-			bot.say("Wast of time!!!")
-			return
-		
-		data_struct = json.loads(j_data)
-		i=0
-	
-		while i < len(data_struct):
-			#print data_struct[i][0]
-			if data_struct[i][0] == userInfo[0]:
-				del data_struct[i]
-				print data_struct
-				i=0 #Should be optimalized !!!!!
-			if len(data_struct) != 1: #If jos was the only guy in the database, his entry would stay in the database. Not cool for jos.
-				i = i + 1
-	
-	with open(path,'w') as f:
-		json.dump(json.dumps(data_struct), f)
-		bot.say("Your information has been deleted.")
-		return
+			data_struct = json.loads(j_data)
+			data_struct = unicode_to_utf8(data_struct)
 
-def _decode_list(data):
-    rv = []
-    for item in data:
-        if isinstance(item, unicode):
-            item = item.encode('utf-8')
-        elif isinstance(item, list):
-            item = _decode_list(item)
-        elif isinstance(item, dict):
-            item = _decode_dict(item)
-        rv.append(item)
-    return rv
+			for i in range(len(data_struct)):
+				if userInfo[0] == data_struct[i][0]:
+					updateDatabase(bot,userInfo,path,"delete")
+		except ValueError:
+			return 
+
+def unicode_to_utf8(data):
+	if isinstance(data, list):
+		return [unicode_to_utf8(item) for item in data]
+	elif isinstance(data, unicode):
+		return data.encode('utf-8')
+	else:
+		return data
 
 @willie.module.commands('gvw')
-@willie.module.example('.gvw 13.00 key doorstatus attendies food')
+@willie.module.example('.gvw 13.00 key doorstatus attendies food update')
 def gvw(bot, trigger):
 	key_found = False
 	valid_input_hour = False
@@ -125,7 +135,7 @@ def gvw(bot, trigger):
 
 	#Fix bug if user types : .gvw with a space after it.
 	if message == None:
-		updateDatabase(bot,userInfo,get_file_path(bot, trigger.sender),None)
+		updateDatabase(bot,userInfo,get_file_path(bot, trigger.sender),"delete")
 		return		
 	
 	message = message.lower()
@@ -134,56 +144,62 @@ def gvw(bot, trigger):
 
 	"""Check all the variables, in the message. Construct userInfo[]"""
 	if hour in hour_range(0,24,0.01):
-		userInfo[3] = hour
+		userInfo[3] = float(hour)
 		if 'key' in message:		
 			userInfo[1] = True
 		if 'food' in message:
 			userInfo[2] = True
+		findUserInDatabaseAndDelete(bot,userInfo,get_file_path(bot,trigger.sender))
 		updateDatabase(bot,userInfo,get_file_path(bot, trigger.sender),"add")
-
-	"""Check when the door will open"""
+	
+	"""Search for the doorstatus, attendies and who needs food"""
 	key_holder_user = []
 	key_holder_arrival = []
 	hungry_users_need_food = []
 	attending_users = []
 	key_found = False
+	bot.say('line 161')
+	if 'doorstatus' or 'food' or 'attendies' in message:	
+		with open(get_file_path(bot,trigger.sender),'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
+			try:
+				j_data =json.load(f)
+				data_struct = json.loads(j_data)
+				data_struct = unicode_to_utf8(data_struct) 
+				#encoding not working !!!!!!!!!! Fix with line 157 and 158, not nice.		
+		
+				for i in range(len(data_struct)):
+					if data_struct[i][1] == True:
+						key_holder_user.append(data_struct[i][0])
+						key_holder_arrival.append(data_struct[i][3])
+						key_found = True
+					
+					if data_struct[i][2] == True:
+						hungry_users_need_food.append(data_struct[i][0])
+					
+					attending_users.append(data_struct[i][0])
 
-	with open(get_file_path(bot,trigger.sender),'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
-		try:
-			j_data =json.load(f)
-			data_struct = json.loads(j_data,object_hook=_decode_list) 
-			#encoding not working !!!!!!!!!! Fix with line 157 and 158, not nice.		
-	
-			for i in range(len(data_struct)):
-				data_struct[i][0] = data_struct[i][0].encode('utf-8')
-				data_struct[i][3] = float(data_struct[i][3])
-				if data_struct[i][1] == True:
-					key_holder_user.append(data_struct[i][0])
-					key_holder_arrival.append(data_struct[i][3])
-					key_found = True
-				if data_struct[i][2] == True:
-					hungry_users_need_food.append(data_struct[i][0])
-				attending_users.append(data_struct[i][0])
+				arrival = 24.01
+				i=0                                       # Using this variable because its bigger than all the vars we can get.
+				position=0
+				
+				if key_found:
+					for item in key_holder_arrival:
+						if item < arrival:
+							arrival = item
+							position = i
+						i = i + 1
+					if 'doorstatus' in message:
+						bot.say("The door will be opened by %s at %.2f" 
+								% (key_holder_user[position],key_holder_arrival[position]))
 
-			arrival = 24.01
-			i=0                                       # Using this variable because its bigger than all the vars we can get.
-			position=0
-			
-			if key_found:
-				for item in key_holder_arrival:
-					if item < arrival:
-						arrival = item
-						position = i
-					i = i + 1
-				if 'doorstatus' in message:
-					bot.say("The door will be opened by %s at %.2f" 
-							% (key_holder_user[position],key_holder_arrival[position]))
-			if 'food' in message:
-				bot.say("The hungry citizens are %s" % hungry_users_need_food)
-			if 'attendies' in message:
-				bot.say("Attending: %s" % attending_users)
+				if 'food' in message:
+					bot.say("Hungry: %s" % hungry_users_need_food)
+				
+				if 'attendies' in message:
+					bot.say("Attending: %s" % attending_users)
 
-		except ValueError:										#Build in ValueError , because if file empty => Problems !!! 
-			bot.say("My database is empty!!!")
-			return
+			except ValueError:										#Build in ValueError , because if file empty => Problems !!! 
+				bot.say("My database is empty!!!")
+				return
+
 
