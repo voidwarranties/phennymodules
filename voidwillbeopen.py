@@ -130,7 +130,7 @@ def gvw(bot, trigger):
 	
 	message = message.lower()
 	list_message = message.split()
-	hour = list_message[0].replace("@","")
+	hour = list_message[0].replace("@","").replace(":",".").replace("h",".")
 
 	"""Check all the variables, in the message. Construct userInfo[]"""
 	if hour in hour_range(0,24,0.01):
