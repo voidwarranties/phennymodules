@@ -165,7 +165,6 @@ def gvw(bot, trigger):
 				j_data =json.load(f)
 				data_struct = json.loads(j_data)
 				data_struct = unicode_to_utf8(data_struct) 
-				#encoding not working !!!!!!!!!! Fix with line 157 and 158, not nice.		
 		
 				for i in range(len(data_struct)):
 					if data_struct[i][1] == True:
