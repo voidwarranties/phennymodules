@@ -188,6 +188,8 @@ def gvw(bot, trigger):
 					if 'doorstatus' in message:
 						bot.say("The door will be opened by %s at %.2f" 
 								% (key_holder_user[position],key_holder_arrival[position]))
+				else:
+					bot.say("No key to open the door.")
 
 				if 'food' in message:
 					bot.say("Hungry: %s" % hungry_users_need_food)
