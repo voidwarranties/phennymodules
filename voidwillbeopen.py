@@ -1,8 +1,7 @@
 """
 voidwillbeopen.py
 A module for willie http://willie.dftba.net/
-This module is used for getting information when our hackerspace will be open
-and the user who will open the doors.
+
 http://we.voidwarranties.be/
 Author: unloading
 """
