@@ -54,13 +54,13 @@ def hour_range(start, stop, step):
 	return li
 
 def updateDatabase(bot,userInfo,path,option):
-	if(option=="add"):
-		new_data_struct=[]
+	if(option == "add"):
+		new_data_struct = []
 
 		"""Read info from the .json file"""
 		with open(path,'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
 			try:
-				j_data =json.load(f)
+				j_data = json.load(f)
 				data_struct = json.loads(j_data)		
 				for i in range(len(data_struct)):
 					new_data_struct.append(data_struct[i])
@@ -94,9 +94,9 @@ def updateDatabase(bot,userInfo,path,option):
 				if data_struct[i][0] == userInfo[0]:
 					del data_struct[i]
 					print data_struct
-					i=0 #Should be optimalized !!!!!
+					i = 0 #Should be optimalized !!!!!
 				if len(data_struct) != 1: #If jos was the only guy in the database, his entry would stay in the database. Not cool for jos.
-					i = i + 1
+					i += 1
 		
 		with open(path,'w') as f:
 			json.dump(json.dumps(data_struct), f)
@@ -158,11 +158,12 @@ def gvw(bot, trigger):
 	hungry_users_need_food = []
 	attending_users = []
 	key_found = False
-	bot.say('line 161')
+	#bot.say('line 161')
 	if ('doorstatus' or 'food' or 'attendies') in message:	
 		with open(get_file_path(bot,trigger.sender),'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
 			try:
-				j_data =json.load(f)
+				#bot.say('line 165')
+				j_data = json.load(f)
 				data_struct = json.loads(j_data)
 				data_struct = unicode_to_utf8(data_struct) 
 		
@@ -178,15 +179,15 @@ def gvw(bot, trigger):
 					attending_users.append(data_struct[i][0])
 
 				arrival = 24.01
-				i=0                                       # Using this variable because its bigger than all the vars we can get.
-				position=0
+				i = 0                                       # Using this variable because its bigger than all the vars we can get.
+				position = 0
 				
 				if key_found:
 					for item in key_holder_arrival:
 						if item < arrival:
 							arrival = item
 							position = i
-						i = i + 1
+						i += 1
 					if 'doorstatus' in message:
 						bot.say("The door will be opened by %s at %.2f" 
 								% (key_holder_user[position],key_holder_arrival[position]))
