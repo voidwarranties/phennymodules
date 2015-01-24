@@ -159,7 +159,7 @@ def gvw(bot, trigger):
 	attending_users = []
 	key_found = False
 	bot.say('line 161')
-	if 'doorstatus' or 'food' or 'attendies' in message:	
+	if ('doorstatus' or 'food' or 'attendies') in message:	
 		with open(get_file_path(bot,trigger.sender),'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
 			try:
 				j_data =json.load(f)
