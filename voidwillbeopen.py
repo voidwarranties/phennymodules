@@ -95,9 +95,8 @@ def update_database(bot,userInfo,path,option):
 			except ValueError:
 				bot.say("The database was empty?!")
 				return
-			
-			
-def findUserInDatabaseAndDelete(bot,userInfo,path):
+
+def delete_userinfo_database(bot,userInfo,path):
 	with open(path,'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
 		try:
 			j_data =json.load(f)
@@ -122,17 +121,17 @@ def unicode_to_utf8(data):
 		return data
 
 @willie.module.commands('gvw')
-@willie.module.example('.gvw 13.00 key doorstatus users food update')
+@willie.module.example('.gvw 13.00 -k -d -f -a')
 def gvw(bot, trigger):
 	key_found = False
 	valid_input_hour = False
 	message = trigger.group(2)
 	#dummy userInfo = [username,has_key,needsfood,arrival_hour]
-	userInfo = [trigger.nick,False,False,None] 
+	userInfo = [trigger.nick,False,False,None]
 	
 	""".gvw deletes the information of the user"""
 	if message == None or message == '':
-		updateDatabase(bot,userInfo,get_file_path(bot, trigger.sender),"delete")
+		update_database(bot,userInfo,get_file_path(bot, trigger.sender),"delete")
 		bot.say("Your information has been deleted.")
 		return		
 	
@@ -143,13 +142,16 @@ def gvw(bot, trigger):
 	"""Check all the variables, in the message. Construct userInfo[]"""
 	if hour in hour_range(0,24,0.01):
 		userInfo[3] = float(hour)
-		if 'key' in message:		
+		if '-k' in message:		
 			userInfo[1] = True	
-		if 'food' in message:
+		if '-f' in message:
 			userInfo[2] = True
 
-		findUserInDatabaseAndDelete(bot,userInfo,get_file_path(bot,trigger.sender))
+		delete_userinfo_database(bot,userInfo,get_file_path(bot,trigger.sender))
 		update_database(bot,userInfo,get_file_path(bot, trigger.sender),"add")
+	
+	if (('-d' not in message) and ('-f' not in message) and ('-a' not in message)):
+		return
 	
 	"""Search for the doorstatus, attendies and who needs food"""
 	key_holder_user = []
@@ -158,45 +160,47 @@ def gvw(bot, trigger):
 	attending_users = []
 	key_found = False
 	
-	if 'doorstatus' in message or 'food' in message or 'users' in message:
-		with open(get_file_path(bot,trigger.sender),'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
-			try:
-				j_data = json.load(f)
-				data_struct = json.loads(j_data)
-				data_struct = unicode_to_utf8(data_struct) 
+	with open(get_file_path(bot,trigger.sender),'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
+		try:
+			j_data = json.load(f)
+			data_struct = json.loads(j_data)
+			data_struct = unicode_to_utf8(data_struct) 
 		
-				for i in range(len(data_struct)):
-					if data_struct[i][1] == True:
-						key_holder_user.append(data_struct[i][0])
-						key_holder_arrival.append(data_struct[i][3])
-						key_found = True
+			for i in range(len(data_struct)):
+				if data_struct[i][1] == True:
+					key_holder_user.append(data_struct[i][0])
+					key_holder_arrival.append(data_struct[i][3])
+					key_found = True
 					
-					if data_struct[i][2] == True:
-						hungry_users_need_food.append(data_struct[i][0])
-					
-					attending_users.append(data_struct[i][0])
+				if data_struct[i][2] == True:
+					hungry_users_need_food.append(data_struct[i][0])
+				attending_users.append(data_struct[i][0])
 
-				arrival = 24.01
-				i = 0                                       # Using this variable because its bigger than all the vars we can get.
-				position = 0
-				if key_found:
-					for item in key_holder_arrival:
-						if item < arrival:
-							arrival = item
-							position = i
+			arrival = 24.01
+			i = 0                                       # Using this variable because its bigger than all the vars we can get.
+			position = 0
+		
+			if key_found:
+				for item in key_holder_arrival:
+					if item < arrival:
+						arrival = item
+						position = i
+					if len(key_holder_arrival) > 1:
 						i += 1
-					if 'doorstatus' in message:
-						bot.say("The door will be opened by %s at %.2f" 
-								% (key_holder_user[position],key_holder_arrival[position]))
-				else:
-					bot.say("No key to open the door.")
+	
+			if '-d' in message and key_found:
+				bot.say("The door will be opened by %s at %.2f" 
+					% (key_holder_user[position],key_holder_arrival[position]))
+			else:
+				bot.say("No key to open the door.")
 
-				if 'food' in message:
-					bot.say("Hungry: %s" % hungry_users_need_food)
+			if '-f' in message:
+				bot.say("Hungry: %s" % hungry_users_need_food)
 				
-				if 'users' in message:
-					bot.say("Attending: %s" % attending_users)
-
-			except ValueError:										#Build in ValueError , because if file empty => Problems !!! 
-				bot.say("My database is empty?!")
-				return
+			if '-a' in message:
+				bot.say("Attending: %s" % attending_users)
+			return
+		
+		except ValueError:										#Build in ValueError , because if file empty => Problems !!! 
+			bot.say("My database is empty?!")
+			return
