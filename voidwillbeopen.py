@@ -51,7 +51,7 @@ def hour_range(start, stop, step):
 		start += step
 	return li
 
-def updateDatabase(bot,userInfo,path,option):
+def update_database(bot,userInfo,path,option):
 	if(option == "add"):
 		new_data_struct = []
 
@@ -106,7 +106,7 @@ def findUserInDatabaseAndDelete(bot,userInfo,path):
 
 			for i in range(len(data_struct)):
 				if userInfo[0] == data_struct[i][0]:
-					updateDatabase(bot,userInfo,path,"delete")
+					update_database(bot,userInfo,path,"delete")
 			return
 
 		except ValueError:
@@ -122,7 +122,7 @@ def unicode_to_utf8(data):
 		return data
 
 @willie.module.commands('gvw')
-@willie.module.example('.gvw 13.00 key doorstatus attendies food update')
+@willie.module.example('.gvw 13.00 key doorstatus users food update')
 def gvw(bot, trigger):
 	key_found = False
 	valid_input_hour = False
@@ -149,7 +149,7 @@ def gvw(bot, trigger):
 			userInfo[2] = True
 
 		findUserInDatabaseAndDelete(bot,userInfo,get_file_path(bot,trigger.sender))
-		updateDatabase(bot,userInfo,get_file_path(bot, trigger.sender),"add")
+		update_database(bot,userInfo,get_file_path(bot, trigger.sender),"add")
 	
 	"""Search for the doorstatus, attendies and who needs food"""
 	key_holder_user = []
@@ -158,7 +158,7 @@ def gvw(bot, trigger):
 	attending_users = []
 	key_found = False
 	
-	if 'doorstatus' in message or 'food' in message or 'attendies' in message:
+	if 'doorstatus' in message or 'food' in message or 'users' in message:
 		with open(get_file_path(bot,trigger.sender),'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
 			try:
 				j_data = json.load(f)
@@ -194,7 +194,7 @@ def gvw(bot, trigger):
 				if 'food' in message:
 					bot.say("Hungry: %s" % hungry_users_need_food)
 				
-				if 'attendies' in message:
+				if 'users' in message:
 					bot.say("Attending: %s" % attending_users)
 
 			except ValueError:										#Build in ValueError , because if file empty => Problems !!! 
