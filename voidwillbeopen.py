@@ -136,7 +136,6 @@ def gvw(bot, trigger):
 	hour_found = check_hour_in_message(list_message)
 
 	if hour_found:
-		bot.say("hour found")
 		hour = list_message[0]
 		userInfo[3] = float(hour)
 		if '-k' in message:		
