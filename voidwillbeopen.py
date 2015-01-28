@@ -1,8 +1,6 @@
 """
 voidwillbeopen.py
 A module for willie http://willie.dftba.net/
-This module is used for getting information when our hackerspace will be open
-and the user who will open the doors.
 http://we.voidwarranties.be/
 Author: unloading
 """
@@ -13,6 +11,8 @@ from willie.config import ConfigurationError
 import os
 import os.path
 from datetime import datetime
+
+import json
 
 def configure(config):
 	"""Adds settings to the config file"""
@@ -30,7 +30,7 @@ def get_file_path(bot, channel):
 	basedir = os.path.expanduser(bot.config.keylogs.dir)
 	channel = channel.lstrip("#")
 	dt = datetime.utcnow()
-	fname = "{channel}{date}.log".format(channel=channel,date=dt.date().isoformat())
+	fname = "{channel}{date}.json".format(channel=channel,date=dt.date().isoformat())
 	return os.path.join(basedir, fname)
 
 def setup(bot):
@@ -44,95 +44,163 @@ def setup(bot):
     if not os.path.exists(basedir):
         os.makedirs(basedir)
 
-
-@willie.module.commands('gvw')
-@willie.module.example('.gvw @3.00 i have a key')
-@willie.module.example('.gvw @13.00 i have a key')
-def gvw(bot, trigger):
-	
-	hours = []
-	key_users = []
-	all_users = []
-	i=0
-	arrival_time = 25.00
-	key_found = False
-	valid_input = False
-
-	message = trigger.group(2)
-	 
-	###################################################
-	##Register the info of sender.
-	###################################################
-	if message != None:
-		message = message.lower()
-		list_message = message.split()
-	
-		hour = " [HOUR] " + list_message[0].replace("@","")
-		user = " [USER] " + trigger.nick
-		
-		if 'key' in message:
-			
-			f_line = "[KEY]" + hour + user + "\n"
-			split_f_line = f_line.split()
-			
-			if split_f_line[2] in hour_range(0,24,0.01):
-				bot.say("OK , user has a key and the input:%s is valid" % split_f_line[2])
-				#bot.say("Niobe: What is so important about that key?") 
-				#bot.say("Keymaker: The key is integral to the path of the One.")
-				valid_input = True
-		else:
-			
-			f_line = hour + user + "\n"
-			split_f_line = f_line.split()
-			
-			if split_f_line[1] in hour_range(0,24,0.01):
-				bot.say("OK , the input:%s is valid" % split_f_line[1])
-				valid_input = True
-
-	
-
-	if valid_input:
-		f=open(get_file_path(bot, trigger.sender), "a")
-		f.write(f_line)
-		f.close()
-
-		###################################################
-		##Return the info about users and key to the sender.
-		###################################################
-		
-		f=open(get_file_path(bot, trigger.sender), "r")
-		for line in f:
-			splitline = line.split()
-			
-
-			if 'KEY' in line:
-				hours.append(splitline[2])
-				key_users.append(splitline[4])
-				all_users.append(splitline[4])
-				key_found = True
-			else:
-				all_users.append(splitline[3])
-
-		f.close()
-
-		if key_found:
-			for item in hours:
-				float_item = float(item)
-				if float_item < arrival_time:
-					arrival_time = float_item
-					position = i
-				i=i+1
-			bot.say("Voidwarranties will be open at %s (24.00 scale) , %s will open the doors" 
-					% (hours[position],key_users[position]))
-			bot.say("You will see the following users @voidwarranties: %s" % all_users)
-		else:
-			bot.say("Greetings keyless person, the keymaker has failed us.") 
-			bot.say("Maybe you will see the following users @voidwarranties: %s" % all_users)
-	else:
-		bot.say("The input was invalid")
 def hour_range(start, stop, step):
 	li = []
 	while start <= stop:
 		li.append('%.2f' % start)
 		start += step
 	return li
+
+def update_database(bot,userInfo,path,option):
+	if(option == "add"):
+		new_data_struct = []
+
+		"""Read info from the .json file"""
+		with open(path,'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
+			try:
+				j_data = json.load(f)
+				data_struct = json.loads(j_data)		
+				for i in range(len(data_struct)):
+					new_data_struct.append(data_struct[i])
+				new_data_struct.append(userInfo)
+
+			except ValueError:		
+				print(ValueError)
+				new_data_struct.append(userInfo)
+			
+			"""Write new info to the .json file"""
+			with open(path,'w') as f:
+				json.dump(json.dumps(new_data_struct), f)
+				bot.say("Your information has been stored.")			
+			return
+			
+	"""	
+	Read info from .json file and search for entries 
+	with the username userInfo[0], delete those		
+	"""
+	if(option=="delete"):
+		with open(path,'a+') as f:	#'r' not good enough, if file does not exists. Problems!
+			try:
+				j_data = json.load(f)
+				data_struct = json.loads(j_data)
+
+				for i in range(len(data_struct)):
+					if data_struct[i][0] == userInfo[0]:
+						del data_struct[i]
+		
+				with open(path,'w') as f:
+					json.dump(json.dumps(data_struct), f)
+					return
+
+			except ValueError:
+				bot.say("The database was empty?!")
+				return
+
+def delete_userinfo_database(bot,userInfo,path):
+	with open(path,'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
+		try:
+			j_data =json.load(f)
+			data_struct = json.loads(j_data)
+			data_struct = unicode_to_utf8(data_struct)
+
+			for i in range(len(data_struct)):
+				if userInfo[0] == data_struct[i][0]:
+					update_database(bot,userInfo,path,"delete")
+			return
+
+		except ValueError:
+			return 
+
+
+def unicode_to_utf8(data):
+	if isinstance(data, list):
+		return [unicode_to_utf8(item) for item in data]
+	elif isinstance(data, unicode):
+		return data.encode('utf-8')
+	else:
+		return data
+
+@willie.module.commands('gvw')
+@willie.module.example('.gvw 13.00 -k -d -f -a')
+def gvw(bot, trigger):
+	key_found = False
+	valid_input_hour = False
+	message = trigger.group(2)
+	#dummy userInfo = [username,has_key,needsfood,arrival_hour]
+	userInfo = [trigger.nick,False,False,None]
+	
+	""".gvw deletes the information of the user"""
+	if message == None or message == '':
+		update_database(bot,userInfo,get_file_path(bot, trigger.sender),"delete")
+		bot.say("Your information has been deleted.")
+		return		
+	
+	message = message.lower()
+	list_message = message.split()
+	hour = list_message[0].replace("@","").replace(":",".").replace("h",".").replace("H",".").replace("m","").replace("M","")
+
+	"""Check all the variables, in the message. Construct userInfo[]"""
+	if hour in hour_range(0,24,0.01):
+		userInfo[3] = float(hour)
+		if '-k' in message:		
+			userInfo[1] = True	
+		if '-f' in message:
+			userInfo[2] = True
+
+		delete_userinfo_database(bot,userInfo,get_file_path(bot,trigger.sender))
+		update_database(bot,userInfo,get_file_path(bot, trigger.sender),"add")
+	
+	if (('-d' not in message) and ('-f' not in message) and ('-a' not in message)):
+		return
+	
+	"""Search for the doorstatus, attendies and who needs food"""
+	key_holder_user = []
+	key_holder_arrival = []
+	hungry_users_need_food = []
+	attending_users = []
+	key_found = False
+	
+	with open(get_file_path(bot,trigger.sender),'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
+		try:
+			j_data = json.load(f)
+			data_struct = json.loads(j_data)
+			data_struct = unicode_to_utf8(data_struct) 
+		
+			for i in range(len(data_struct)):
+				if data_struct[i][1] == True:
+					key_holder_user.append(data_struct[i][0])
+					key_holder_arrival.append(data_struct[i][3])
+					key_found = True
+					
+				if data_struct[i][2] == True:
+					hungry_users_need_food.append(data_struct[i][0])
+				attending_users.append(data_struct[i][0])
+
+			arrival = 24.01
+			i = 0                                       # Using this variable because its bigger than all the vars we can get.
+			position = 0
+		
+			if key_found:
+				for item in key_holder_arrival:
+					if item < arrival:
+						arrival = item
+						position = i
+					if len(key_holder_arrival) > 1:
+						i += 1
+	
+			if '-d' in message and key_found:
+				bot.say("The door will be opened by %s at %.2f" 
+					% (key_holder_user[position],key_holder_arrival[position]))
+			else:
+				bot.say("No key to open the door.")
+
+			if '-f' in message:
+				bot.say("Hungry: %s" % hungry_users_need_food)
+				
+			if '-a' in message:
+				bot.say("Attending: %s" % attending_users)
+			return
+		
+		except ValueError:										#Build in ValueError , because if file empty => Problems !!! 
+			bot.say("My database is empty?!")
+			return
