@@ -51,50 +51,33 @@ def hour_range(start, stop, step):
 		start += step
 	return li
 
-def update_database(bot,userInfo,path,option):
-	if(option == "add"):
-		new_data_struct = []
+def add_userinfo_database(bot,userInfo,path):
+	new_data_struct = []
 
-		"""Read info from the .json file"""
-		with open(path,'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
-			try:
-				j_data = json.load(f)
-				data_struct = json.loads(j_data)		
-				for i in range(len(data_struct)):
-					new_data_struct.append(data_struct[i])
-				new_data_struct.append(userInfo)
+	"""Read info from the .json file"""
+	with open(path,'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
+		try:
+			j_data = json.load(f)
+			data_struct = json.loads(j_data)		
+			for i in range(len(data_struct)):
+				new_data_struct.append(data_struct[i])
+			new_data_struct.append(userInfo)
 
-			except ValueError:		
-				print(ValueError)
-				new_data_struct.append(userInfo)
+		except ValueError:		
+			print(ValueError)
+			new_data_struct.append(userInfo)
 			
-			"""Write new info to the .json file"""
-			with open(path,'w') as f:
-				json.dump(json.dumps(new_data_struct), f)
-				bot.say("Your information has been stored.")			
-			return
+		"""Write new info to the .json file"""
+		with open(path,'w') as f:
+			json.dump(json.dumps(new_data_struct), f)
+			bot.say("Your information has been stored.")			
+		return
+
 			
-	"""	
-	Read info from .json file and search for entries 
-	with the username userInfo[0], delete those		
-	"""
-	if(option=="delete"):
-		with open(path,'a+') as f:	#'r' not good enough, if file does not exists. Problems!
-			try:
-				j_data = json.load(f)
-				data_struct = json.loads(j_data)
-
-				for i in range(len(data_struct)):
-					if data_struct[i][0] == userInfo[0]:
-						del data_struct[i]
-		
-				with open(path,'w') as f:
-					json.dump(json.dumps(data_struct), f)
-					return
-
-			except ValueError:
-				bot.say("The database was empty?!")
-				return
+"""	
+Read info from .json file and search for entries 
+with the username userInfo[0], delete those		
+"""
 
 def delete_userinfo_database(bot,userInfo,path):
 	with open(path,'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
@@ -105,10 +88,14 @@ def delete_userinfo_database(bot,userInfo,path):
 
 			for i in range(len(data_struct)):
 				if userInfo[0] == data_struct[i][0]:
-					update_database(bot,userInfo,path,"delete")
-			return
+					del data_struct[i]
+					
+			with open(path,'w') as f:
+				json.dump(json.dumps(data_struct), f)
+				return
 
 		except ValueError:
+			bot.say("The database is empty")
 			return 
 
 
@@ -131,7 +118,7 @@ def gvw(bot, trigger):
 	
 	""".gvw deletes the information of the user"""
 	if message == None or message == '':
-		update_database(bot,userInfo,get_file_path(bot, trigger.sender),"delete")
+		del_userinfo_database(bot,userInfo,get_file_path(bot, trigger.sender))
 		bot.say("Your information has been deleted.")
 		return		
 	
@@ -148,7 +135,7 @@ def gvw(bot, trigger):
 			userInfo[2] = True
 
 		delete_userinfo_database(bot,userInfo,get_file_path(bot,trigger.sender))
-		update_database(bot,userInfo,get_file_path(bot, trigger.sender),"add")
+		add_userinfo_database(bot,userInfo,get_file_path(bot, trigger.sender))
 	
 	if (('-d' not in message) and ('-f' not in message) and ('-a' not in message)):
 		return
