@@ -44,9 +44,9 @@ def setup(bot):
     if not os.path.exists(basedir):
         os.makedirs(basedir)
 
-def hour_range(start, stop, step):
+def frange(start, stop, step):
 	li = []
-	while start <= stop:
+	while start < stop:
 		li.append('%.2f' % start)
 		start += step
 	return li
@@ -73,12 +73,6 @@ def add_userinfo_database(bot,userInfo,path):
 			bot.say("Your information has been stored.")			
 		return
 
-			
-"""	
-Read info from .json file and search for entries 
-with the username userInfo[0], delete those		
-"""
-
 def delete_userinfo_database(bot,userInfo,path):
 	with open(path,'a+') as f: 	#'r' not good enough, if file does not exists. Problems!
 		try:
@@ -86,10 +80,12 @@ def delete_userinfo_database(bot,userInfo,path):
 			data_struct = json.loads(j_data)
 			data_struct = unicode_to_utf8(data_struct)
 
+
 			for i in range(len(data_struct)):
 				if userInfo[0] == data_struct[i][0]:
 					del data_struct[i]
-					
+					break
+
 			with open(path,'w') as f:
 				json.dump(json.dumps(data_struct), f)
 				return
@@ -97,7 +93,6 @@ def delete_userinfo_database(bot,userInfo,path):
 		except ValueError:
 			bot.say("The database is empty")
 			return 
-
 
 def unicode_to_utf8(data):
 	if isinstance(data, list):
@@ -107,36 +102,50 @@ def unicode_to_utf8(data):
 	else:
 		return data
 
+def check_hour_in_message(splitmessage):
+	hour_possibility = []
+	for h in range(0,24):
+		for m in range(0,60):
+			hour_possibility.append("%d.%02d" %(h,m))
+
+	for j in hour_possibility:
+		if splitmessage[0] in j:
+			return True
+	
+	return False
+	
 @willie.module.commands('gvw')
 @willie.module.example('.gvw 13.00 -k -d -f -a')
 def gvw(bot, trigger):
 	key_found = False
 	valid_input_hour = False
+	hour_found = False
+
 	message = trigger.group(2)
 	#dummy userInfo = [username,has_key,needsfood,arrival_hour]
 	userInfo = [trigger.nick,False,False,None]
 	
 	""".gvw deletes the information of the user"""
 	if message == None or message == '':
-		del_userinfo_database(bot,userInfo,get_file_path(bot, trigger.sender))
+		delete_userinfo_database(bot,userInfo,get_file_path(bot, trigger.sender))
 		bot.say("Your information has been deleted.")
 		return		
 	
 	message = message.lower()
 	list_message = message.split()
-	hour = list_message[0].replace("@","").replace(":",".").replace("h",".").replace("H",".").replace("m","").replace("M","")
+	hour_found = check_hour_in_message(list_message)
 
-	"""Check all the variables, in the message. Construct userInfo[]"""
-	if hour in hour_range(0,24,0.01):
+	if hour_found:
+		bot.say("hour found")
+		hour = list_message[0]
 		userInfo[3] = float(hour)
 		if '-k' in message:		
 			userInfo[1] = True	
 		if '-f' in message:
 			userInfo[2] = True
-
 		delete_userinfo_database(bot,userInfo,get_file_path(bot,trigger.sender))
 		add_userinfo_database(bot,userInfo,get_file_path(bot, trigger.sender))
-	
+
 	if (('-d' not in message) and ('-f' not in message) and ('-a' not in message)):
 		return
 	
@@ -178,7 +187,7 @@ def gvw(bot, trigger):
 			if '-d' in message and key_found:
 				bot.say("The door will be opened by %s at %.2f" 
 					% (key_holder_user[position],key_holder_arrival[position]))
-			else:
+			elif 'd' in message and not key_found:
 				bot.say("No key to open the door.")
 
 			if '-f' in message:
