@@ -4,15 +4,10 @@ status.py - Phenny spacestatus module
 Author: Ward De Ridder
 """
 
-import urllib2
-import json
+import spaceapiapi
 
 def status(phenny, input): 
-	u = urllib2.urlopen('http://voidwarranties.org/SpaceAPI/')
-	jsonSpaceAPI = json.load(u)
-	u.close()
-	spacestatus = ""
-	if jsonSpaceAPI['state']['open'] == True:
+	if spaceapiapi.SpaceapiOpen(apiURL) == True:
 		spacestatus = "open"
 	else:
 		spacestatus = "closed"
