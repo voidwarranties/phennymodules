@@ -15,7 +15,7 @@ def SpaceapiOpen(apiURL):
     return jsonSpaceAPI['state']['open']
 
 def status(phenny, input): 
-	if spaceapiapi.SpaceapiOpen("http://spaceapi.voidwarranties.be/") == True:
+	if SpaceapiOpen("http://spaceapi.voidwarranties.be/") == True:
 		spacestatus = "open"
 	else:
 		spacestatus = "closed"
